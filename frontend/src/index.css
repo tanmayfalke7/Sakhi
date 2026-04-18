@@ -1,0 +1,89 @@
+.btn-primary {
+  background: linear-gradient(135deg, #C8A2C8, #BFA2DB);
+  border: none;
+}
+
+.nav-link.active {
+  color: #C8A2C8 !important;
+}
+
+.btn-outline-primary {
+  color: #C8A2C8; /* text color */
+  border: 2px solid #C8A2C8; /* custom border color */
+  transition: all 0.3s ease; /* smooth hover effect */
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #C8A2C8, #BFA2DB); /* gradient on hover */
+  color: white; /* text color on hover */
+  border-color: #C8A2C8; /* maintain border color on hover */
+}
+.custom-badge {
+  background: #FCE4F6;   /* or your existing pink color */
+  color: #C8A2C8;        /* your theme pink */
+  border: none;
+}
+
+
+/* Footer CSS */
+/* Footer Background */
+.footer-wrapper {
+  background: linear-gradient(to bottom, #ffffff, rgba(249, 215, 230, 0.2));
+}
+
+/* Text */
+.footer-text {
+  color: #6c757d;
+}
+
+.footer-small {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.footer-heading {
+  font-weight: 600;
+}
+
+/* Remove Blue Links */
+.footer-links a {
+  text-decoration: none;
+  color: #6c757d;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #C8A2C8;
+}
+
+/* Social Circle Style */.social-circle {
+  width: 42px;
+  height: 42px;
+  background-color: #F9D7E6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none !important;
+
+  color: #C8A2C8 !important; /* icon color */
+}
+
+/* VERY IMPORTANT - target SVG */
+.social-circle svg {
+  stroke: #C8A2C8 !important;
+}
+
+/* Hover */
+.social-circle:hover {
+  background-color: #C8A2C8;
+}
+
+.social-circle:hover svg {
+  stroke: white !important;
+}
+
+/* Heart Fill */
+.heart-icon {
+  color: #F9D7E6;
+}

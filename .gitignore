@@ -1,0 +1,122 @@
+# ----------------------
+# OS files
+# ----------------------
+.DS_Store
+Thumbs.db
+
+# ----------------------
+# Environment variables
+# ----------------------
+.env
+.env.*
+!.env.example
+
+# ----------------------
+# Node.js (Backend + Frontend)
+# ----------------------
+frontend/node_modules/
+node-backend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build folders
+dist/
+build/
+
+# ----------------------
+# Python (Flask / ML backend)
+# ----------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.joblib
+
+# Virtual environments
+venv/
+env/
+pcodvenv/
+.venv/
+
+*.dll
+*.exe
+
+# ----------------------
+# Jupyter / Data Science (PCOS Dataset)
+# ----------------------
+.ipynb_checkpoints/
+*.ipynb
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+
+# ML Models (can be huge - important for PCOS project)
+*.h5
+*.keras
+*.pb
+*.tflite
+*.onnx
+*.pickle
+
+# ----------------------
+# Logs
+# ----------------------
+logs/
+*.log
+
+# ----------------------
+# IDE / Editor
+# ----------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----------------------
+# Testing
+# ----------------------
+coverage/
+.pytest_cache/
+.tox/
+
+# ----------------------
+# Uploads & Media (User uploaded PCOS reports)
+# ----------------------
+uploads/
+media/
+static/uploads/
+temp/
+tmp/
+
+# ----------------------
+# Databases
+# ----------------------
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+
+# ----------------------
+# Secrets & Keys
+# ----------------------
+*.key
+*.pem
+*.crt
+.secrets/
+
+# ----------------------
+# Backups
+# ----------------------
+*.backup
+*.bak
+
+# ----------------------
+# Misc
+# ----------------------
+*.zip
+*.tar.gz
+*.rar

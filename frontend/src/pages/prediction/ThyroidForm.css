@@ -1,0 +1,72 @@
+/* Page spacing */
+.thyroid-container{
+display:flex;
+justify-content:center;
+margin-top:40px;
+}
+
+/* Card styling */
+.thyroid-card{
+width:420px;
+border-radius:12px;
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
+border:none;
+background:#ffffff;
+}
+
+/* Title */
+.thyroid-title{
+text-align:center;
+font-weight:600;
+margin-bottom:20px;
+color:#2c3e50;
+}
+
+/* Inputs */
+.thyroid-card input,
+.thyroid-card select{
+
+border-radius:8px;
+padding:10px;
+font-size:14px;
+border:1px solid #ddd;
+transition:0.2s;
+
+}
+
+.thyroid-card input:focus,
+.thyroid-card select:focus{
+
+border-color:#5b9cff;
+box-shadow:0 0 5px rgba(91,156,255,0.3);
+
+}
+
+/* Button */
+.predict-btn{
+
+width:100%;
+border-radius:8px;
+padding:10px;
+font-weight:500;
+background:#5b9cff;
+border:none;
+transition:0.2s;
+
+}
+
+.predict-btn:hover{
+
+background:#3b7df0;
+
+}
+
+/* Result box */
+
+.result-box{
+
+border-radius:10px;
+font-size:14px;
+line-height:1.6;
+
+}

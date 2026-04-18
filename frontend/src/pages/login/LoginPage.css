@@ -1,0 +1,57 @@
+.login-section{
+background: linear-gradient(135deg,#f9d7e6,#ffffff,#e6d5f7);
+min-height:100vh;
+}
+
+.login-image-card{
+background:white;
+padding:25px;
+border-radius:25px;
+box-shadow:0 15px 40px rgba(0,0,0,0.1);
+}
+
+.login-card{
+background:white;
+padding:40px;
+border-radius:25px;
+box-shadow:0 15px 40px rgba(0,0,0,0.1);
+}
+
+.custom-input .input-group-text{
+background:#f3e8f6;
+border:none;
+color:#a07cb5;
+}
+
+.custom-input input{
+border:none;
+box-shadow:none;
+}
+
+.eye-btn{
+border:none;
+background:#f3e8f6;
+}
+
+.login-btn{
+background:#b79ac8;
+border:none;
+padding:12px;
+border-radius:30px;
+font-weight:600;
+}
+
+.login-btn:hover{
+background:#a986be;
+}
+
+.signup-link{
+color:#b79ac8;
+font-weight:600;
+text-decoration:none;
+}
+
+.forgot-link{
+color:#b79ac8;
+text-decoration:none;
+}

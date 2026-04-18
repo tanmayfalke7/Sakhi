@@ -1,0 +1,149 @@
+/* Floating Button (Bottom Right) */
+.chat-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background-color: #C0A0D0;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(192, 160, 208, 0.4);
+  z-index: 998;
+  transition: transform 0.3s ease;
+}
+
+.chat-fab:hover {
+  transform: scale(1.1);
+}
+
+/* Background Blur Overlay */
+.chat-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.3); /* Light transparent background */
+  backdrop-filter: blur(8px); /* This creates the blur effect */
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Centered Chat Window */
+.chat-modal {
+  width: 90%;
+  max-width: 450px;
+  height: 80vh;
+  max-height: 600px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Chat Header */
+.chat-header {
+  background: linear-gradient(135deg, #C0A0D0, #D8C0E0);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Chat Messages Area */
+.chat-body {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: #fafafa;
+}
+
+.message {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 15px;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+
+.message.user {
+  background-color: #f0f0f0;
+  color: #333;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.message.sakhi {
+  background-color: #f6eefc;
+  color: #4a3b52;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #eadff2;
+}
+
+.sakhi-image {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+/* Input Area */
+.chat-footer {
+  padding: 15px;
+  background: white;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+}
+
+.chat-footer input {
+  flex: 1;
+  padding: 12px 20px;
+  border: 1px solid #ddd;
+  border-radius: 25px;
+  outline: none;
+  font-size: 1rem;
+}
+
+.chat-footer input:focus {
+  border-color: #C0A0D0;
+}
+
+.chat-footer button {
+  background-color: #C0A0D0;
+  color: white;
+  border: none;
+  padding: 0 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: bold;
+}

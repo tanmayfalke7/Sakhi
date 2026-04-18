@@ -1,0 +1,31 @@
+.btn-primary {
+  background: linear-gradient(135deg, #C8A2C8, #BFA2DB);
+  border: none;
+}
+
+.nav-link.active {
+  color: #C8A2C8 !important;
+}
+
+.smooth-border{
+position:relative;
+}
+
+.smooth-border::after{
+content:"";
+position:absolute;
+bottom:0;
+left:0;
+width:100%;
+height:2px;
+
+background:linear-gradient(
+90deg,
+transparent,
+#C8A2C8,
+#BFA2DB,
+transparent
+);
+
+opacity:0.7;
+}

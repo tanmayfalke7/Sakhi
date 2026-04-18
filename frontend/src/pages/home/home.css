@@ -1,0 +1,57 @@
+.hero-section{
+background: linear-gradient(
+135deg,
+rgba(249,215,230,0.3),
+white,
+rgba(191,162,219,0.2)
+);
+}
+
+/* sakhi smooth card */
+.sakhi-card{
+background:white;
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,0.05);
+transition:all 0.3s ease;
+}
+
+.sakhi-card:hover{
+transform:translateY(-6px);
+box-shadow:0 20px 40px rgba(0,0,0,0.08);
+}
+
+/* icon circle */
+.icon-circle{
+width:60px;
+height:60px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+
+background:rgba(249,215,230,0.4);
+color:#C8A2C8;
+}
+
+/* quote cards */
+.quote-card{
+background: linear-gradient(
+135deg,
+rgba(249,215,230,0.3),
+white
+);
+border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,0.05);
+transition:all 0.3s ease;
+}
+
+.quote-card:hover{
+transform:translateY(-5px);
+box-shadow:0 20px 40px rgba(0,0,0,0.08);
+}
+
+/* quote icon */
+.quote-icon{
+color:#C8A2C8;
+font-size:36px;
+}

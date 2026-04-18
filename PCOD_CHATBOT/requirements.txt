@@ -1,0 +1,31 @@
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.30.1
+
+# Database
+neo4j==5.20.0
+
+# Configuration & Environment
+pydantic==2.7.0
+pydantic-settings==2.2.0
+python-dotenv==1.0.0
+
+# HTTP Client (version will be resolved by pip)
+httpx
+
+# Google Gemini SDK
+google-genai==1.8.0
+
+# OpenAI SDK (commented out if not needed - uncomment if you need it)
+# openai==1.30.0
+
+# Utilities
+jinja2==3.1.4
+python-multipart==0.0.9
+tenacity==8.3.0
+redis==5.0.4
+
+pandas==2.0.3       # Must match training env
+scikit-learn==1.3.0 # Must match training env
+joblib==1.3.2       # Must match training env
+numpy==1.24.3
