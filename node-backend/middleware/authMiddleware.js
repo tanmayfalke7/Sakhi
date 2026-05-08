@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-// Protect routes - verify JWT
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -25,7 +25,16 @@ const protect = async (req, res, next) => {
         process.env.JWT_SECRET || 'your_jwt_secret_key'
       );
 
-      req.user = decoded;
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Not authorized to access this route',
+        });
+      }
+
+      req.user = user;
       next();
     } catch (error) {
       return res.status(401).json({
@@ -38,4 +47,15 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = protect;
+const authorize = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'You are not allowed to access this resource',
+    });
+  }
+
+  next();
+};
+
+module.exports = { protect, authorize };

@@ -1,27 +1,20 @@
 const express = require('express');
 const {
-  createUser,
-  getAllUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
+  getProfile,
+  updateProfile,
+  getDashboard,
+  getNotifications,
+  markNotificationRead,
+  getHealthHistory,
 } = require('../controllers/userController');
 
 const router = express.Router();
 
-// POST /api/users - Create a new user
-router.post('/', createUser);
-
-// GET /api/users - Get all users
-router.get('/', getAllUsers);
-
-// GET /api/users/:id - Get user by ID
-router.get('/:id', getUserById);
-
-// PUT /api/users/:id - Update user
-router.put('/:id', updateUser);
-
-// DELETE /api/users/:id - Delete user
-router.delete('/:id', deleteUser);
+router.get('/dashboard', getDashboard);
+router.get('/profile', getProfile);
+router.put('/profile', updateProfile);
+router.get('/history', getHealthHistory);
+router.get('/notifications', getNotifications);
+router.patch('/notifications/:id/read', markNotificationRead);
 
 module.exports = router;

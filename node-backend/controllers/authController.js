@@ -1,24 +1,18 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
 exports.registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    // Validation
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide all required fields (name, email, password)',
+        message: 'Please provide name, email, and password',
       });
     }
-    console.log(req.body);
 
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findByEmail(email);
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -26,14 +20,13 @@ exports.registerUser = async (req, res, next) => {
       });
     }
 
-    // Create user
     const user = await User.create({
       name,
       email,
       password,
+      role: 'patient',
     });
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -44,6 +37,7 @@ exports.registerUser = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt,
       },
     });
@@ -52,14 +46,10 @@ exports.registerUser = async (req, res, next) => {
   }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 exports.loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -67,8 +57,7 @@ exports.loginUser = async (req, res, next) => {
       });
     }
 
-    // Check for user - include password field
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findByEmail(email, { includePassword: true });
 
     if (!user) {
       return res.status(401).json({
@@ -77,7 +66,6 @@ exports.loginUser = async (req, res, next) => {
       });
     }
 
-    // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
@@ -87,8 +75,8 @@ exports.loginUser = async (req, res, next) => {
       });
     }
 
-    // Generate token
     const token = generateToken(user._id);
+    await User.updateById(user._id, { lastLoginAt: new Date() });
 
     res.status(200).json({
       success: true,
@@ -98,6 +86,9 @@ exports.loginUser = async (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        phone: user.phone,
+        profile: user.profile,
       },
     });
   } catch (error) {
@@ -105,13 +96,8 @@ exports.loginUser = async (req, res, next) => {
   }
 };
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private (Protected route)
 exports.logoutUser = async (req, res, next) => {
   try {
-    // Since we're using stateless JWT, logout is just a client-side operation
-    // But we can return a success message for consistency
     res.status(200).json({
       success: true,
       message: 'Logout successful',
@@ -121,16 +107,31 @@ exports.logoutUser = async (req, res, next) => {
   }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private (Protected route)
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    res.status(200).json({
+      success: true,
+      data: req.user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your email address',
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: user,
+      message: 'Password reset is not automated yet. Please contact the Sakhi support doctor.',
     });
   } catch (error) {
     next(error);

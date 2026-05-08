@@ -71,7 +71,7 @@ async def health_check():
         "status": "healthy",
         "database": db_status,
         "llm_provider": settings.LLM_PROVIDER,
-        "model": settings.LLM_MODEL
+        "model": settings.GEMINI_MODEL
     }
 
 if __name__ == "__main__":

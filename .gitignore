@@ -9,7 +9,11 @@ Thumbs.db
 # ----------------------
 .env
 .env.*
+PCOD_CHATBOT/.env
+node-backend/.env
 !.env.example
+!PCOD_CHATBOT/.env.example
+!node-backend/.env.example
 
 # ----------------------
 # Node.js (Backend + Frontend)

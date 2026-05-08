@@ -6,7 +6,7 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
 
-  // Handle MongoDB validation errors
+  // Handle validation errors
   if (err.name === 'ValidationError') {
     statusCode = 400;
     message = Object.values(err.errors)
@@ -14,15 +14,15 @@ const errorHandler = (err, req, res, next) => {
       .join(', ');
   }
 
-  // Handle MongoDB duplicate key error
-  if (err.code === 11000) {
+  // Handle duplicate key errors
+  if (err.code === 11000 || err.code === 'ER_DUP_ENTRY') {
     statusCode = 400;
-    const field = Object.keys(err.keyValue)[0];
+    const field = err.keyValue ? Object.keys(err.keyValue)[0] : 'value';
     message = `${field} already exists`;
   }
 
-  // Handle MongoDB Cast Error
-  if (err.name === 'CastError') {
+  // Handle invalid ID errors
+  if (err.name === 'CastError' || err.code === 'ER_TRUNCATED_WRONG_VALUE') {
     statusCode = 400;
     message = 'Invalid ID format';
   }

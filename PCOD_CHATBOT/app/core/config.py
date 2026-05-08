@@ -3,15 +3,15 @@ from pydantic import ConfigDict
 from typing import Optional
 
 class Settings(BaseSettings):
-    # Neo4j Configuration (unchanged)
+    # Neo4j Configuration
     NEO4J_URI: str = "bolt://localhost:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "Tanmaychaneo4j@123"
+    NEO4J_PASSWORD: str = ""
     
-    # Google Gemini Configuration - FREE!
+    # Google Gemini Configuration
     LLM_PROVIDER: str = "gemini"
-    GEMINI_API_KEY: str = "AIzaSyCzDSYd373Hwc-96gjJ8ovmMcjUCQIjfzI"  # Your API key from Google AI Studio
-    GEMINI_MODEL: str = "gemini-2.5-flash"  # Best free tier model
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # Alternative models you can try:
     # "gemini-3-pro-preview" - Stronger reasoning (limited free)
@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    # New Unsplash setting
-    UNSPLASH_ACCESS_KEY: str = "W0QzBYrexonp5A6KlRR7pLmiVmgdCkXSYUzf3q0jloo"
+    # Unsplash setting
+    UNSPLASH_ACCESS_KEY: str = ""
     
     model_config = ConfigDict(env_file=".env", extra="ignore")
 

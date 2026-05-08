@@ -5,14 +5,12 @@ import authService from "../../services/authService";
 import "./SignupPage.css";
 
 export default function SignupPage() {
-
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,7 +23,7 @@ export default function SignupPage() {
       ...formData,
       [e.target.name]: e.target.value
     });
-    setError(""); // Clear error when user starts typing
+    setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -35,28 +33,24 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Validate inputs
       if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
         setError("Please fill in all fields");
         setLoading(false);
         return;
       }
 
-      // Validate password length
       if (formData.password.length < 6) {
         setError("Password must be at least 6 characters long");
         setLoading(false);
         return;
       }
 
-      // Check if passwords match
       if (formData.password !== formData.confirmPassword) {
         setError("Passwords do not match");
         setLoading(false);
         return;
       }
 
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         setError("Please enter a valid email address");
@@ -64,7 +58,6 @@ export default function SignupPage() {
         return;
       }
 
-      // Call register API
       const response = await authService.registerUser(
         formData.name,
         formData.email,
@@ -72,20 +65,16 @@ export default function SignupPage() {
       );
 
       if (response.success) {
-        setSuccess("Registration successful! Redirecting to login...");
-        
-        // Reset form
+        setSuccess("Registration successful! Redirecting to your dashboard...");
         setFormData({
           name: "",
           email: "",
           password: "",
           confirmPassword: ""
         });
-        
-        // Redirect to login page after a short delay
         setTimeout(() => {
-          navigate("/login");
-        }, 1500);
+          navigate("/portal");
+        }, 1200);
       }
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
@@ -96,16 +85,11 @@ export default function SignupPage() {
 
   return (
     <div className="signup-page">
-
       <div className="signup-wrapper">
-
-        {/* LEFT FORM */}
         <div className="signup-card">
-
           <h2>Join Sakhi</h2>
           <p className="subtitle">Your Companion in Women's Health</p>
 
-          {/* ERROR MESSAGE */}
           {error && (
             <div className="alert alert-danger alert-dismissible fade show" role="alert">
               {error}
@@ -113,7 +97,6 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* SUCCESS MESSAGE */}
           {success && (
             <div className="alert alert-success alert-dismissible fade show" role="alert">
               {success}
@@ -122,12 +105,11 @@ export default function SignupPage() {
           )}
 
           <form onSubmit={handleSubmit}>
-
             <label>Full Name</label>
             <div className="input-field">
               <User size={18}/>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 name="name"
                 placeholder="Enter your full name"
                 value={formData.name}
@@ -139,8 +121,8 @@ export default function SignupPage() {
             <label>Email Address</label>
             <div className="input-field">
               <Mail size={18}/>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 name="email"
                 placeholder="your.email@example.com"
                 value={formData.email}
@@ -160,7 +142,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
               />
-              <span onClick={()=>setShowPassword(!showPassword)}>
+              <span onClick={() => setShowPassword(!showPassword)}>
                 {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
               </span>
             </div>
@@ -176,7 +158,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 required
               />
-              <span onClick={()=>setShowConfirm(!showConfirm)}>
+              <span onClick={() => setShowConfirm(!showConfirm)}>
                 {showConfirm ? <EyeOff size={18}/> : <Eye size={18}/>}
               </span>
             </div>
@@ -188,29 +170,20 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <button 
-              className="signup-btn" 
-              type="submit"
-              disabled={loading}
-            >
+            <button className="signup-btn" type="submit" disabled={loading}>
               {loading ? "Creating Account..." : "Create Account"}
             </button>
 
             <p className="login-text">
               Already have an account? <Link to="/login">Login</Link>
             </p>
-
           </form>
-
         </div>
 
-        {/* RIGHT SIDE */}
-
         <div className="signup-right">
-
           <img
-          src="https://images.unsplash.com/photo-1676629650907-d50f2f27db20"
-          alt="women support"
+            src="https://images.unsplash.com/photo-1676629650907-d50f2f27db20"
+            alt="women support"
           />
 
           <h3>Why Join Sakhi?</h3>
@@ -246,10 +219,8 @@ export default function SignupPage() {
               <p>Your health data is encrypted and always secure</p>
             </div>
           </div>
-
         </div>
-
       </div>
     </div>
-  )
+  );
 }

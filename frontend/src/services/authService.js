@@ -1,77 +1,89 @@
-import axios from 'axios';
+import API from "./api";
 
-// Create axios instance with baseURL
-const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
-});
+const notifyAuthChange = () => {
+  window.dispatchEvent(new Event("sakhi-auth-changed"));
+};
 
-// Add token to requests if it exists
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+const persistSession = (payload) => {
+  if (payload?.token) {
+    localStorage.setItem("token", payload.token);
   }
-  return config;
-});
+  if (payload?.data) {
+    localStorage.setItem("sakhi-user", JSON.stringify(payload.data));
+  }
+  notifyAuthChange();
+};
 
-// Auth Service Functions
 const authService = {
-  // Register a new user
   registerUser: async (name, email, password) => {
     try {
-      const response = await API.post('/auth/register', {
+      const response = await API.post("/auth/register", {
         name,
         email,
         password,
       });
+      persistSession(response.data);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Registration failed' };
+      throw error.response?.data || { message: "Registration failed" };
     }
   },
 
-  // Login user
   loginUser: async (email, password) => {
     try {
-      const response = await API.post('/auth/login', {
+      const response = await API.post("/auth/login", {
         email,
         password,
       });
-      
-      // Store token in localStorage
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-      }
-      
+      persistSession(response.data);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Login failed' };
+      throw error.response?.data || { message: "Login failed" };
     }
   },
 
-  // Logout user
-  logoutUser: () => {
-    localStorage.removeItem('token');
+  logoutUser: async () => {
+    try {
+      if (localStorage.getItem("token")) {
+        await API.post("/auth/logout");
+      }
+    } catch {
+      // Swallow logout request failures and clear the session anyway.
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("sakhi-user");
+      notifyAuthChange();
+    }
   },
 
-  // Get current user
   getCurrentUser: async () => {
     try {
-      const response = await API.get('/auth/me');
+      const response = await API.get("/auth/me");
+      if (response.data?.data) {
+        localStorage.setItem("sakhi-user", JSON.stringify(response.data.data));
+        notifyAuthChange();
+      }
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Failed to fetch user' };
+      throw error.response?.data || { message: "Failed to fetch user" };
     }
   },
 
-  // Check if user is authenticated
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem("token");
   },
 
-  // Get stored token
   getToken: () => {
-    return localStorage.getItem('token');
+    return localStorage.getItem("token");
+  },
+
+  getStoredUser: () => {
+    const value = localStorage.getItem("sakhi-user");
+    return value ? JSON.parse(value) : null;
+  },
+
+  isDoctor: () => {
+    return authService.getStoredUser()?.role === "doctor";
   },
 };
 
