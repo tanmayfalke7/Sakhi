@@ -12,4 +12,28 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    if (status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("sakhi-user");
+      window.dispatchEvent(new Event("sakhi-auth-changed"));
+    }
+
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      error.message ||
+      "Something went wrong. Please try again.";
+
+    return Promise.reject({
+      ...error,
+      message,
+      response: error.response,
+    });
+  },
+);
+
 export default API;

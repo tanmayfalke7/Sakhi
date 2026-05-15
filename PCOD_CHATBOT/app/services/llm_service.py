@@ -1,265 +1,13 @@
-# import asyncio
-# import json
-# import logging
-# import re
-
-# from google import genai
-# from google.genai import types
-# from pydantic import BaseModel, Field
-
-# from core.config import settings
-
-# logger = logging.getLogger(__name__)
-
-
-# class GeminiChatPayload(BaseModel):
-#     answer: str = Field(description="Final user-facing answer")
-#     visual_keyword: str = Field(description='Short stock-photo keyword or "none"')
-
-
-# class LLMService:
-#     def __init__(self):
-#         """Initialize Google Gemini client."""
-#         self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
-#         self.model = settings.GEMINI_MODEL
-
-#         self.system_prompt = """You are Glow, a warm, empowering PCOS nutrition coach for women 18-27.
-
-# PERSONALITY:
-# - Like a supportive big sister who's been through it
-# - Body-positive, never judgmental, always encouraging
-# - Uses casual, friendly language naturally
-# - Celebrates small wins and gives confidence
-
-# VOICE:
-# - Warm and relatable
-# - Encouraging and practical
-# - Always specific enough to be useful today
-
-# KNOWLEDGE:
-# Base all answers on the graph data provided in the context. Never make up facts.
-# If data is missing, say so clearly and offer safe, practical general guidance.
-
-# RESPONSE STRUCTURE:
-# 1. Warm acknowledgment
-# 2. What the science says from the graph context
-# 3. Practical food or meal guidance
-# 4. Short, encouraging next step
-# Keep responses concise and actionable."""
-
-#     async def generate_response_with_keyword(
-#         self,
-#         user_message: str,
-#         graph_context: list,
-#         conversation_history: list = None,
-#     ) -> tuple[str, str]:
-#         """Generate a response plus a visual keyword for image lookup."""
-
-#         context_text = self._format_context(graph_context)
-#         json_prompt = f"""{self.system_prompt}
-
-# GRAPH CONTEXT:
-# {context_text}
-
-# USER MESSAGE: {user_message}
-
-# Return only structured data with:
-# - answer: the final user-facing reply
-# - visual_keyword: a simple 1-3 word stock-photo search phrase, or "none"
-# """
-
-#         max_retries = 3
-
-#         for attempt in range(max_retries):
-#             try:
-#                 response = await self.client.aio.models.generate_content(
-#                     model=self.model,
-#                     contents=json_prompt,
-#                     config=types.GenerateContentConfig(
-#                         temperature=settings.TEMPERATURE,
-#                         max_output_tokens=settings.MAX_TOKENS,
-#                         top_p=settings.TOP_P,
-#                         response_mime_type="application/json",
-#                         response_schema=GeminiChatPayload,
-#                     ),
-#                 )
-
-#                 parsed = self._parse_structured_response(response)
-#                 return parsed.answer, parsed.visual_keyword
-
-#             except Exception as error:
-#                 error_msg = str(error)
-#                 logger.error(f"Gemini API error (Attempt {attempt + 1}/{max_retries}): {error_msg}")
-
-#                 if "503" in error_msg and attempt < max_retries - 1:
-#                     wait_time = 2 ** attempt
-#                     logger.info(f"Retrying in {wait_time} seconds...")
-#                     await asyncio.sleep(wait_time)
-#                     continue
-
-#                 if attempt == max_retries - 1:
-#                     fallback_msg = (
-#                         "Hey love! I have a helpful suggestion for you, but the reply formatting broke. "
-#                         "Try asking me something specific like 'Give me a PCOS-friendly breakfast idea'."
-#                     )
-#                 return fallback_msg, "none"
-
-#         return "Hey love! Please try again in a moment.", "none"
-
-#     async def extract_visual_keyword(self, user_message: str, graph_context: list) -> str:
-#         """Fast keyword-only request used by streaming mode."""
-#         context_text = self._format_context(graph_context)
-#         prompt = f"""Based on this user query: "{user_message}" and this context: {context_text}
-# Provide only a single 1-2 word search term for a stock photo such as "healthy diet", "yoga", or "sleep".
-# Do not output any other text."""
-
-#         try:
-#             response = await self.client.aio.models.generate_content(
-#                 model=self.model,
-#                 contents=prompt,
-#                 config=types.GenerateContentConfig(
-#                     temperature=0.1,
-#                     max_output_tokens=10,
-#                 ),
-#             )
-#             return response.text.strip().replace('"', "")
-#         except Exception:
-#             return "none"
-
-#     async def stream_response(
-#         self,
-#         user_message: str,
-#         graph_context: list,
-#         conversation_history: list = None,
-#     ):
-#         """Stream a text response for real-time chat."""
-
-#         context_text = self._format_context(graph_context)
-#         full_prompt = f"""{self.system_prompt}
-
-# Context from knowledge graph:
-# {context_text}
-
-# User: {user_message}
-
-# Respond warmly with practical advice:"""
-
-#         try:
-#             response = await self.client.aio.models.generate_content_stream(
-#                 model=self.model,
-#                 contents=full_prompt,
-#                 config=types.GenerateContentConfig(
-#                     temperature=settings.TEMPERATURE,
-#                     max_output_tokens=settings.MAX_TOKENS,
-#                     top_p=settings.TOP_P,
-#                 ),
-#             )
-
-#             async for chunk in response:
-#                 if chunk.text:
-#                     yield chunk.text
-
-#         except Exception as error:
-#             logger.error(f"Gemini stream error: {error}")
-#             yield "Oops! Connection hiccup, but I'm still here for you."
-
-#     def _parse_structured_response(self, response) -> GeminiChatPayload:
-#         """Prefer SDK-native structured parsing, then fall back to cleaned JSON text."""
-#         if getattr(response, "parsed", None):
-#             parsed = response.parsed
-#             if isinstance(parsed, GeminiChatPayload):
-#                 return parsed
-#             if isinstance(parsed, dict):
-#                 return self._payload_from_mapping(parsed)
-
-#         raw_text = (getattr(response, "text", "") or "").strip()
-#         cleaned = self._clean_json_text(raw_text)
-
-#         if cleaned:
-#             try:
-#                 return self._payload_from_mapping(json.loads(cleaned))
-#             except Exception as parse_error:
-#                 logger.warning(f"Primary JSON parse fallback failed: {parse_error}")
-
-#             extracted = self._extract_first_json_object(cleaned)
-#             if extracted:
-#                 try:
-#                     return self._payload_from_mapping(json.loads(extracted))
-#                 except Exception as parse_error:
-#                     logger.warning(f"Secondary JSON parse fallback failed: {parse_error}")
-
-#         raise ValueError(f"Structured Gemini response could not be parsed: {raw_text[:300]}")
-
-#     @staticmethod
-#     def _payload_from_mapping(data: dict) -> GeminiChatPayload:
-#         return GeminiChatPayload(
-#             answer=str(data.get("answer") or "Hey love! My brain had a tiny hiccup!"),
-#             visual_keyword=str(data.get("visual_keyword") or "none"),
-#         )
-
-#     @staticmethod
-#     def _clean_json_text(raw_text: str) -> str:
-#         if not raw_text:
-#             return ""
-
-#         cleaned = raw_text.strip()
-#         if cleaned.startswith("```"):
-#             cleaned = re.sub(r"^```json\s*|^```\s*", "", cleaned)
-#             cleaned = re.sub(r"\s*```$", "", cleaned).strip()
-#         return cleaned
-
-#     @staticmethod
-#     def _extract_first_json_object(text: str) -> str | None:
-#         start = text.find("{")
-#         end = text.rfind("}")
-#         if start == -1 or end == -1 or end <= start:
-#             return None
-#         return text[start : end + 1]
-
-#     def _format_context(self, graph_data: list) -> str:
-#         """Make graph data readable for Gemini."""
-#         if not graph_data:
-#             return "No specific graph data found. Use safe general PCOS nutrition guidance."
-
-#         lines = []
-#         for item in graph_data[:5]:
-#             if "food" in item:
-#                 line = f"- Food: {item['food']}"
-#                 if "description" in item:
-#                     line += f" - {item['description']}"
-#                 if "how_it_helps" in item:
-#                     line += f"\n  Helps: {item['how_it_helps']}"
-#                 if "nutrients" in item:
-#                     nutrients = [n.get("nutrient") for n in item["nutrients"] if n.get("nutrient")]
-#                     if nutrients:
-#                         line += f"\n  Contains: {', '.join(nutrients[:3])}"
-#                 lines.append(line)
-
-#             elif "plan_name" in item:
-#                 lines.append(f"- Meal Plan: {item['plan_name']}")
-#                 if "description" in item:
-#                     lines.append(f"  {item['description']}")
-#                 if "duration" in item:
-#                     lines.append(f"  {item['duration']} days")
-
-#             elif "type" in item:
-#                 lines.append(f"- {item['type']}: {item['name']}")
-
-#             lines.append("")
-
-#         return "\n".join(lines)
-
-
-# llm_service = LLMService()
 import asyncio
 import json
 import logging
 import re
-import time
+from json import JSONDecodeError
+from typing import Any
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from core.config import settings
 
@@ -273,26 +21,18 @@ class GeminiChatPayload(BaseModel):
 
 class LLMService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        self.client = genai.Client(api_key=settings.GEMINI_API_KEY) if settings.GEMINI_API_KEY else None
         self.model = settings.GEMINI_MODEL
-
         self.system_prompt = """
-You are Glow, a warm and empowering PCOS nutrition coach for women aged 18-27.
+You are Glow, a warm and empowering PCOS nutrition coach.
 
-RULES:
-- Speak like a caring elder sister
-- Friendly, practical, motivating
-- Never shame body image or weight
-- Give realistic daily suggestions
-- Keep answers concise
-- Use graph context first
-- If missing data, say honestly and give safe advice
+Use the supplied graph context first. Be practical, concise, body-positive, and medically safe.
+For meal plans, summarize the 7-day plan from the graph data without inventing missing meals.
 
-OUTPUT:
-Return only JSON:
+Return only JSON with exactly this shape:
 {
- "answer":"helpful reply",
- "visual_keyword":"1-3 word image keyword or none"
+  "answer": "final user-facing answer",
+  "visual_keyword": "1-3 word image keyword or none"
 }
 """
 
@@ -300,209 +40,236 @@ Return only JSON:
         self,
         user_message: str,
         graph_context: list,
-        conversation_history: list = None,
+        conversation_history: list | None = None,
     ) -> tuple[str, str]:
-
-        fallback_msg = (
-            "Hey love 💛 I'm having a tiny tech hiccup right now. "
-            "For today, try a balanced meal with protein, fiber, and healthy fats."
-        )
-
         if self._is_harmful_query(user_message):
             return (
-                "I'm here for healthy PCOS support only 💛 "
-                "Please ask me about food, fitness, hormones, sleep, or wellness.",
+                "I can support PCOS nutrition, wellness, and symptom questions, but I cannot help with self-harm or unsafe dieting. If you feel at risk, please contact local emergency support or a trusted person right now.",
                 "none",
             )
 
-        context_text = self._format_context(graph_context)
+        if not self.client:
+            return self._fallback_answer(graph_context), "none"
 
-        prompt = f"""
-{self.system_prompt}
+        prompt = f"""{self.system_prompt}
 
 GRAPH CONTEXT:
-{context_text}
+{self._format_context(graph_context)}
 
 USER MESSAGE:
 {user_message}
 """
 
-        max_retries = 3
-
-        for attempt in range(max_retries):
+        for attempt in range(3):
             try:
-                start = time.time()
-
                 response = await self.client.aio.models.generate_content(
                     model=self.model,
                     contents=prompt,
                     config=types.GenerateContentConfig(
-                        temperature=0.6,
-                        max_output_tokens=450,
-                        top_p=0.9,
+                        temperature=settings.TEMPERATURE,
+                        max_output_tokens=settings.MAX_TOKENS,
+                        top_p=settings.TOP_P,
                         response_mime_type="application/json",
                         response_schema=GeminiChatPayload,
                     ),
                 )
-
                 parsed = self._parse_structured_response(response)
-
-                logger.info(
-                    f"Gemini success in {time.time() - start:.2f}s | Attempt {attempt+1}"
-                )
-
-                return parsed.answer, parsed.visual_keyword
-
+                return parsed.answer.strip(), self._safe_keyword(parsed.visual_keyword)
             except Exception as error:
-                logger.error(
-                    f"Gemini error Attempt {attempt+1}/{max_retries}: {str(error)}"
-                )
-
-                if "503" in str(error) and attempt < max_retries - 1:
-                    wait = 2 ** attempt
-                    logger.info(f"Retrying in {wait}s...")
-                    await asyncio.sleep(wait)
+                logger.warning("Gemini response attempt %s failed: %s", attempt + 1, error)
+                if attempt < 2 and self._is_retryable(error):
+                    await asyncio.sleep(2**attempt)
                     continue
 
-                if attempt == max_retries - 1:
-                    return fallback_msg, "none"
+        return self._fallback_answer(graph_context), "none"
 
-        return fallback_msg, "none"
+    async def extract_visual_keyword(self, user_message: str, graph_context: list) -> str:
+        if not self.client:
+            return "none"
+
+        prompt = f"""Return only one 1-3 word lifestyle image keyword for this PCOS query.
+Query: {user_message}
+Context: {self._format_context(graph_context)[:1200]}
+"""
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=16),
+            )
+            return self._safe_keyword(getattr(response, "text", "none"))
+        except Exception as error:
+            logger.warning("Visual keyword extraction failed: %s", error)
+            return "none"
 
     async def stream_response(
         self,
         user_message: str,
         graph_context: list,
-        conversation_history: list = None,
+        conversation_history: list | None = None,
     ):
-        context_text = self._format_context(graph_context)
+        if not self.client:
+            yield self._fallback_answer(graph_context)
+            return
 
-        prompt = f"""
-You are Glow, a PCOS wellness guide.
+        prompt = f"""You are Glow, a PCOS wellness guide.
 
 Context:
-{context_text}
+{self._format_context(graph_context)}
 
 User:
 {user_message}
 
-Give warm practical advice.
-"""
+Give warm practical advice."""
 
         try:
             response = await self.client.aio.models.generate_content_stream(
                 model=self.model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    temperature=0.6,
-                    max_output_tokens=400,
+                    temperature=settings.TEMPERATURE,
+                    max_output_tokens=settings.MAX_TOKENS,
+                    top_p=settings.TOP_P,
                 ),
             )
-
             async for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-
+                text = getattr(chunk, "text", None)
+                if text:
+                    yield text
         except Exception as error:
-            logger.error(f"Stream error: {error}")
-            yield "Oops 💛 Small connection hiccup. Please try again."
+            logger.warning("Gemini stream failed: %s", error)
+            yield self._fallback_answer(graph_context)
 
-    def _parse_structured_response(self, response) -> GeminiChatPayload:
-
-        if getattr(response, "parsed", None):
-            parsed = response.parsed
-
+    def _parse_structured_response(self, response: Any) -> GeminiChatPayload:
+        parsed = getattr(response, "parsed", None)
+        if parsed:
             if isinstance(parsed, GeminiChatPayload):
                 return parsed
-
             if isinstance(parsed, dict):
                 return self._payload_from_mapping(parsed)
 
         raw_text = (getattr(response, "text", "") or "").strip()
+        for candidate in self._json_candidates(raw_text):
+            try:
+                data = json.loads(candidate)
+                return self._payload_from_mapping(data)
+            except (JSONDecodeError, TypeError, ValidationError):
+                continue
 
-        cleaned = self._clean_json_text(raw_text)
+        if raw_text:
+            logger.warning("Gemini returned non-JSON text; using plain-text fallback.")
+            return GeminiChatPayload(answer=self._strip_code_fences(raw_text), visual_keyword="none")
 
-        try:
-            return self._payload_from_mapping(json.loads(cleaned))
-        except Exception:
-            extracted = self._extract_first_json_object(cleaned)
+        raise ValueError("Gemini returned an empty response.")
 
-            if extracted:
-                try:
-                    return self._payload_from_mapping(json.loads(extracted))
-                except Exception:
-                    pass
+    def _json_candidates(self, text: str) -> list[str]:
+        if not text:
+            return []
 
-        return GeminiChatPayload(
-            answer=raw_text[:400] if raw_text else "Hey love 💛 Please try again.",
-            visual_keyword="none",
-        )
+        stripped = self._strip_code_fences(text)
+        candidates = [stripped]
+
+        decoder = json.JSONDecoder()
+        for index, char in enumerate(stripped):
+            if char not in "{[":
+                continue
+            try:
+                _, end = decoder.raw_decode(stripped[index:])
+                candidates.append(stripped[index : index + end])
+                break
+            except JSONDecodeError:
+                continue
+
+        object_match = re.search(r"\{.*\}", stripped, flags=re.DOTALL)
+        if object_match:
+            candidates.append(object_match.group(0))
+
+        return list(dict.fromkeys(candidate.strip() for candidate in candidates if candidate.strip()))
 
     @staticmethod
-    def _payload_from_mapping(data: dict) -> GeminiChatPayload:
-        return GeminiChatPayload(
-            answer=str(data.get("answer") or "Hey love 💛"),
-            visual_keyword=str(data.get("visual_keyword") or "none"),
-        )
+    def _payload_from_mapping(data: dict | list) -> GeminiChatPayload:
+        if isinstance(data, list):
+            data = {"answer": "\n".join(str(item) for item in data), "visual_keyword": "healthy meal"}
+        if not isinstance(data, dict):
+            data = {"answer": str(data), "visual_keyword": "none"}
+
+        answer = data.get("answer") or data.get("response") or data.get("message") or ""
+        visual_keyword = data.get("visual_keyword") or data.get("image_keyword") or "none"
+        return GeminiChatPayload(answer=str(answer), visual_keyword=str(visual_keyword))
 
     @staticmethod
-    def _clean_json_text(raw_text: str) -> str:
-        if not raw_text:
-            return ""
-
-        cleaned = raw_text.strip()
-        cleaned = cleaned.replace("```json", "").replace("```", "")
-        return cleaned.strip()
+    def _strip_code_fences(text: str) -> str:
+        text = text.strip()
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+            text = re.sub(r"\s*```$", "", text)
+        return text.strip()
 
     @staticmethod
-    def _extract_first_json_object(text: str):
-        start = text.find("{")
-        end = text.rfind("}")
+    def _safe_keyword(keyword: str) -> str:
+        cleaned = re.sub(r"[^a-zA-Z0-9\s-]", "", str(keyword or "none")).strip().lower()
+        return cleaned[:60] or "none"
 
-        if start == -1 or end == -1 or end <= start:
-            return None
-
-        return text[start:end + 1]
+    @staticmethod
+    def _is_retryable(error: Exception) -> bool:
+        text = str(error).lower()
+        return any(code in text for code in ["429", "500", "502", "503", "504", "timeout", "unavailable"])
 
     @staticmethod
     def _is_harmful_query(text: str) -> bool:
-        blocked = [
-            "suicide",
-            "kill myself",
-            "starve myself",
-            "extreme diet pills",
-            "self harm",
-        ]
-
         text = text.lower()
-
+        blocked = ["suicide", "kill myself", "starve myself", "self harm", "extreme diet pills"]
         return any(word in text for word in blocked)
 
+    def _fallback_answer(self, graph_context: list) -> str:
+        meal_plans = [item for item in graph_context if item.get("plan_name")]
+        if meal_plans:
+            return self._meal_plan_fallback(meal_plans[0])
+
+        foods = [item.get("food") for item in graph_context if item.get("food")]
+        if foods:
+            names = ", ".join(foods[:5])
+            return f"Based on the knowledge graph, these PCOS-friendly options may help: {names}. Pair one with protein, fiber, and healthy fats for steadier energy."
+
+        return "I could not format the AI response clearly, but a balanced PCOS-friendly plate is a good start: protein, high-fiber carbs, colorful vegetables, and healthy fats."
+
+    @staticmethod
+    def _meal_plan_fallback(plan: dict) -> str:
+        lines = [f"Here is your 7-day PCOS-friendly meal plan: {plan.get('plan_name', 'Meal Plan')}."]
+        for day in sorted(plan.get("daily_plan") or [], key=lambda item: item.get("day") or 0):
+            meals = []
+            for meal in day.get("meals") or []:
+                meal_name = meal.get("name") or meal.get("meal_name") or meal.get("type") or "Meal"
+                foods = ", ".join(food for food in meal.get("foods", []) if food)
+                meals.append(f"{meal_name}: {foods}" if foods else meal_name)
+            if meals:
+                lines.append(f"Day {day.get('day')}: " + "; ".join(meals))
+        return "\n".join(lines)
+
     def _format_context(self, graph_data: list) -> str:
-
         if not graph_data:
-            return "No graph data available. Use safe PCOS guidance."
+            return "No graph data available. Use safe general PCOS nutrition guidance."
 
-        lines = []
-
-        for item in graph_data[:5]:
-
-            if "food" in item:
+        lines: list[str] = []
+        for item in graph_data[:8]:
+            if item.get("food"):
                 line = f"- Food: {item['food']}"
-
-                if "description" in item:
+                if item.get("description"):
                     line += f" | {item['description']}"
-
-                if "how_it_helps" in item:
+                if item.get("how_it_helps"):
                     line += f" | Helps: {item['how_it_helps']}"
-
                 lines.append(line)
-
-            elif "plan_name" in item:
-                lines.append(f"- Meal Plan: {item['plan_name']}")
-
-            elif "type" in item:
-                lines.append(f"- {item['type']}: {item['name']}")
+            elif item.get("plan_name"):
+                lines.append(f"- Meal Plan: {item.get('plan_name')} ({item.get('duration', 7)} days)")
+                for day in sorted(item.get("daily_plan") or [], key=lambda value: value.get("day") or 0)[:7]:
+                    meal_names = [
+                        meal.get("name") or meal.get("meal_name") or meal.get("type")
+                        for meal in (day.get("meals") or [])
+                        if meal
+                    ]
+                    lines.append(f"  Day {day.get('day')}: {', '.join(filter(None, meal_names))}")
+            elif item.get("type"):
+                lines.append(f"- {item.get('type')}: {item.get('name')} | {item.get('description', '')}")
 
         return "\n".join(lines)
 

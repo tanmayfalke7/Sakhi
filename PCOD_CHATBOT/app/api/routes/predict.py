@@ -47,7 +47,7 @@ async def predict_pcos_endpoint(request: PCOSRequest):
     """Predicts the likelihood of PCOS based on user biometrics and symptoms."""
     try:
         # Convert the Pydantic object to a standard Python dictionary
-        result = ml_service.predict_pcos(request.dict())
+        result = ml_service.predict_pcos(request.model_dump())
         return PredictionResponse(**result)
     except Exception as e:
         logger.error(f"PCOS Prediction error: {e}", exc_info=True)
@@ -57,7 +57,7 @@ async def predict_pcos_endpoint(request: PCOSRequest):
 async def predict_thyroid_endpoint(request: ThyroidRequest):
     """Evaluates thyroid risk based on physical symptoms and sleep patterns."""
     try:
-        result = ml_service.predict_thyroid(request.dict())
+        result = ml_service.predict_thyroid(request.model_dump())
         return PredictionResponse(**result)
     except Exception as e:
         logger.error(f"Thyroid Prediction error: {e}", exc_info=True)

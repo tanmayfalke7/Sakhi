@@ -1,84 +1,121 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from neo4j.exceptions import Neo4jError, ServiceUnavailable
+
+from api.routes import chat, foods, meal_plans, predict
 from core.config import settings
 from core.neo4j_client import neo4j_client
-from api.routes import chat, meal_plans, foods
-from api.routes import predict
 
-# Configure logging
 logging.basicConfig(
-    level=logging.INFO if not settings.DEBUG else logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logger.info(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+    logger.info("Starting %s v%s", settings.APP_NAME, settings.APP_VERSION)
     await neo4j_client.connect()
     yield
-    # Shutdown
     await neo4j_client.close()
-    logger.info("👋 Shutting down")
+    logger.info("Shutting down %s", settings.APP_NAME)
 
-# Create FastAPI app
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="PCOS Nutrition Chatbot - Your friendly guide to eating well with PCOS ✨",
-    lifespan=lifespan
+    description="PCOS nutrition chatbot API",
+    lifespan=lifespan,
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "message": "Invalid request data.",
+            "errors": exc.errors(),
+        },
+    )
+
+
+@app.exception_handler(Neo4jError)
+@app.exception_handler(ServiceUnavailable)
+async def database_exception_handler(request: Request, exc: Exception):
+    logger.error("Database error on %s: %s", request.url.path, exc)
+    return JSONResponse(
+        status_code=503,
+        content={
+            "success": False,
+            "message": "Knowledge graph is temporarily unavailable. Please try again soon.",
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    logger.error("Unhandled error on %s: %s", request.url.path, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "message": "Something went wrong. Please try again soon.",
+        },
+    )
+
+
 app.include_router(predict.router, prefix="/api/v1")
 app.include_router(chat.router, prefix="/api/v1")
 app.include_router(meal_plans.router, prefix="/api/v1")
 app.include_router(foods.router, prefix="/api/v1")
 
+
 @app.get("/")
 async def root():
     return {
-        "message": "🌸 Hey gorgeous! PCOS Nutrition Chatbot API is ready to glow!",
+        "success": True,
+        "message": "PCOS Nutrition Chatbot API is running.",
         "version": settings.APP_VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
     }
+
 
 @app.get("/health")
 async def health_check():
-    """Check if the service is healthy"""
-    try:
-        # Test Neo4j connection
-        await neo4j_client.run_query("RETURN 1 AS test")
-        db_status = "connected"
-    except Exception as e:
-        db_status = f"error: {e}"
-    
+    graph = await neo4j_client.health()
     return {
-        "status": "healthy",
-        "database": db_status,
+        "success": graph["connected"],
+        "status": "healthy" if graph["connected"] else "degraded",
+        "database": graph,
         "llm_provider": settings.LLM_PROVIDER,
-        "model": settings.GEMINI_MODEL
+        "model": settings.GEMINI_MODEL,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
     )

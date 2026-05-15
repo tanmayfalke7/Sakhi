@@ -1,6 +1,6 @@
-# app/services/extractor.py
 import re
-from services.dictionary import SYMPTOM_MAP, INTENT_MAP
+
+from services.dictionary import INTENT_MAP, SYMPTOM_MAP
 
 class QueryExtractor:
     @staticmethod
@@ -13,18 +13,19 @@ class QueryExtractor:
         clean_text = re.sub(r'[^\w\s]', '', user_message.lower())
         
         detected_symptoms = []
-        intent = "symptom_help" # Default intent
+        intent = "symptom_help"
         
         # 1. Detect Symptoms
         for exact_node_name, synonyms in SYMPTOM_MAP.items():
             if any(synonym in clean_text for synonym in synonyms):
                 detected_symptoms.append(exact_node_name)
                 
-        # 2. Detect Intent (Avoidance vs Meal Plan)
+        # Detect the strongest intent. Meal-plan queries should win when the
+        # user asks for a diet plan even if symptom words are also present.
         for intent_name, keywords in INTENT_MAP.items():
             if any(keyword in clean_text for keyword in keywords):
                 intent = intent_name
-                break # Stop at first matched intent
+                break
                 
         return {
             "intent": intent,
