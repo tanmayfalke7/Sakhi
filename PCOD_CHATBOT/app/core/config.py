@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     ALLOWED_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5000,http://127.0.0.1:5000"
-    UNSPLASH_ACCESS_KEY: str = ""
+    UNSPLASH_ACCESS_KEY: str = "W0QzBYrexonp5A6KlRR7pLmiVmgdCkXSYUzf3q0jloo"
 
     model_config = ConfigDict(env_file=".env", extra="ignore")
 
