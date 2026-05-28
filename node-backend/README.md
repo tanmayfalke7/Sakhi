@@ -27,7 +27,7 @@ Node.js/Express API for the Sakhi PCOS Pre-Risk Prediction System.
    DB_HOST=127.0.0.1
    DB_PORT=3306
    DB_USER=root
-   DB_PASSWORD=Tanmaychasql@123
+   DB_PASSWORD=your_mysql_password
    DB_NAME=sakhi_db
 
    ML_SERVICE_URL=http://127.0.0.1:8000

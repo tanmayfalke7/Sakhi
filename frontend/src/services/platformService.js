@@ -12,6 +12,9 @@ const platformService = {
   submitThyroidPrediction: async (payload) => (await API.post("/predictions/thyroid", payload)).data,
   getAppointments: async () => (await API.get("/appointments")).data,
   bookAppointment: async (payload) => (await API.post("/appointments", payload)).data,
+  cancelAppointment: async (id) => (await API.patch(`/appointments/${id}/cancel`)).data,
+  startAppointmentCall: async (id) => (await API.post(`/appointments/${id}/call/start`)).data,
+  endAppointmentCall: async (id) => (await API.post(`/appointments/${id}/call/end`)).data,
   updateAppointmentStatus: async (id, payload) =>
     (await API.patch(`/appointments/${id}/status`, payload)).data,
   getCommunityPosts: async () => (await API.get("/community/posts")).data,
@@ -25,6 +28,7 @@ const platformService = {
   getDoctorNotes: async (patientId) =>
     (await API.get("/doctor/notes", { params: patientId ? { patientId } : undefined })).data,
   createDoctorNote: async (payload) => (await API.post("/doctor/notes", payload)).data,
+  submitContact: async (payload) => (await API.post("/contact", payload)).data,
 };
 
 export default platformService;

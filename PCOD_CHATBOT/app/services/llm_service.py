@@ -24,10 +24,10 @@ class LLMService:
         self.client = genai.Client(api_key=settings.GEMINI_API_KEY) if settings.GEMINI_API_KEY else None
         self.model = settings.GEMINI_MODEL
         self.system_prompt = """
-You are Glow, a warm and empowering PCOS nutrition coach.
+You are Glow, a warm and empowering PCOS health and nutrition coach.
 
 Use the supplied graph context first. Be practical, concise, body-positive, and medically safe.
-For meal plans, summarize the 7-day plan from the graph data without inventing missing meals.
+For meal plans,summarize the 7-day plan from the graph data without inventing missing meals.
 
 Return only JSON with exactly this shape:
 {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import authService from "../../services/authService";
@@ -11,7 +11,26 @@ export default function ThyroidForm() {
   const [rec, setRec] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    weight: "", height: "", sleep: "", fatigue: "0", dry_skin: "0", cold: "0", heat: "0", hair_loss: "0", weight_gain: "0",
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    platformService.getProfile().then((response) => {
+      const profile = response.data?.profile || {};
+      setFormData((current) => ({
+        ...current,
+        weight: profile.weightKg || "",
+        height: profile.heightCm || "",
+        sleep: profile.sleepHours || "",
+      }));
+    }).catch(() => {});
+  }, []);
+
+  const updateField = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,19 +43,7 @@ export default function ThyroidForm() {
     setLoading(true);
     setError("");
 
-    const form = e.target;
-
-    const data = {
-      weight: form.weight.value,
-      height: form.height.value,
-      sleep: form.sleep.value,
-      fatigue: form.fatigue.value,
-      dry_skin: form.dry_skin.value,
-      cold: form.cold.value,
-      heat: form.heat.value,
-      hair_loss: form.hair_loss.value,
-      weight_gain: form.weight_gain.value
-    };
+    const data = { ...formData };
 
     try {
       const res = await platformService.submitThyroidPrediction(data);
@@ -63,36 +70,36 @@ export default function ThyroidForm() {
       </p>
 
       <form onSubmit={handleSubmit}>
-        <input name="weight" placeholder="Weight (kg)" className="form-control mb-2" required />
-        <input name="height" placeholder="Height (cm)" className="form-control mb-2" required />
-        <input name="sleep" placeholder="Sleep hours" className="form-control mb-2" required />
+        <input name="weight" value={formData.weight} onChange={updateField} placeholder="Weight (kg)" className="form-control mb-2" required />
+        <input name="height" value={formData.height} onChange={updateField} placeholder="Height (cm)" className="form-control mb-2" required />
+        <input name="sleep" value={formData.sleep} onChange={updateField} placeholder="Sleep hours" className="form-control mb-2" required />
 
-        <select name="fatigue" className="form-control mb-2">
+        <select name="fatigue" value={formData.fatigue} onChange={updateField} className="form-control mb-2">
           <option value="1">Fatigue Yes</option>
           <option value="0">Fatigue No</option>
         </select>
 
-        <select name="dry_skin" className="form-control mb-2">
+        <select name="dry_skin" value={formData.dry_skin} onChange={updateField} className="form-control mb-2">
           <option value="1">Dry Skin Yes</option>
           <option value="0">Dry Skin No</option>
         </select>
 
-        <select name="cold" className="form-control mb-2">
+        <select name="cold" value={formData.cold} onChange={updateField} className="form-control mb-2">
           <option value="1">Cold Intolerance Yes</option>
           <option value="0">No</option>
         </select>
 
-        <select name="heat" className="form-control mb-2">
+        <select name="heat" value={formData.heat} onChange={updateField} className="form-control mb-2">
           <option value="1">Heat Intolerance Yes</option>
           <option value="0">No</option>
         </select>
 
-        <select name="hair_loss" className="form-control mb-2">
+        <select name="hair_loss" value={formData.hair_loss} onChange={updateField} className="form-control mb-2">
           <option value="1">Hair Loss Yes</option>
           <option value="0">Hair Loss No</option>
         </select>
 
-        <select name="weight_gain" className="form-control mb-2">
+        <select name="weight_gain" value={formData.weight_gain} onChange={updateField} className="form-control mb-2">
           <option value="1">Weight Gain Yes</option>
           <option value="0">Weight Gain No</option>
         </select>
