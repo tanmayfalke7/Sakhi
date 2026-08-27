@@ -1,5 +1,5 @@
 from typing import Optional
-
+import os
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     NEO4J_DATABASE: str = "pcosknowledgegraph"
 
     LLM_PROVIDER: str = "gemini"
-    GEMINI_API_KEY: str = "AIzaSyBMCppjWBjLnjLpcBb1Q4M11jadqnEnbQI"
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")  # Replace with
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
     TEMPERATURE: float = 0.6
