@@ -10,9 +10,13 @@ import Login from "./pages/login/LoginPage";
 import Signup from "./pages/signup/SignupPage";
 import ContactPage from "./pages/contact/ContactPage";
 import PortalPage from "./pages/portal/PortalPage";
+import ProfilePage from "./pages/profile/ProfilePage";
+import PatientAppointmentsPage from "./pages/appointments/PatientAppointmentsPage";
+import VideoCallPage from "./pages/appointments/VideoCallPage";
 import CommunityPage from "./pages/community/CommunityPage";
 import DoctorLoginPage from "./pages/doctor/DoctorLoginPage";
 import DoctorDashboardPage from "./pages/doctor/DoctorDashboardPage";
+import DoctorAppointmentsPage from "./pages/doctor/DoctorAppointmentsPage";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
 import ChatWidget from './components/Chatbot/ChatWidget';
 import authService from "./services/authService";
@@ -52,6 +56,30 @@ export default function App() {
           }
         />
         <Route
+          path="/profile"
+          element={
+            <ProtectedRoute requiredRole="patient">
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/appointments"
+          element={
+            <ProtectedRoute requiredRole="patient">
+              <PatientAppointmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/appointments/:id/call"
+          element={
+            <ProtectedRoute requiredRole="patient">
+              <VideoCallPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/community"
           element={
             <ProtectedRoute>
@@ -65,6 +93,22 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="doctor">
               <DoctorDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/appointments"
+          element={
+            <ProtectedRoute requiredRole="doctor">
+              <DoctorAppointmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/appointments/:id/call"
+          element={
+            <ProtectedRoute requiredRole="doctor">
+              <VideoCallPage />
             </ProtectedRoute>
           }
         />

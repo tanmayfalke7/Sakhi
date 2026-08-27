@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Activity, AlertCircle, Heart, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/authService";
@@ -10,7 +10,32 @@ export default function Data() {
   const [recommendation, setRecommendation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    age: "", weight: "", height: "", waist: "", hip: "", cycle_length: "", cycle: "Yes",
+    weight_gain: "Yes", hair_growth: "No", hair_loss: "No", pimples: "No", skin_darkening: "No",
+    fast_food: "No", exercise: "Yes",
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    platformService.getProfile().then((response) => {
+      const profile = response.data?.profile || {};
+      setFormData((current) => ({
+        ...current,
+        age: profile.age || "",
+        weight: profile.weightKg || "",
+        height: profile.heightCm || "",
+        waist: profile.waistCm || "",
+        hip: profile.hipCm || "",
+        cycle_length: profile.cycleLength || "",
+        cycle: profile.cycleRegularity === "irregular" ? "No" : "Yes",
+      }));
+    }).catch(() => {});
+  }, []);
+
+  const updateField = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,24 +47,7 @@ export default function Data() {
 
     setLoading(true);
     setError("");
-    const form = e.target;
-
-    const data = {
-      age: form.age.value,
-      weight: form.weight.value,
-      height: form.height.value,
-      waist: form.waist.value,
-      hip: form.hip.value,
-      cycle_length: form.cycle_length.value,
-      cycle: form.cycle.value,
-      weight_gain: form.weight_gain.value,
-      hair_growth: form.hair_growth.value,
-      hair_loss: form.hair_loss.value,
-      pimples: form.pimples.value,
-      skin_darkening: form.skin_darkening.value || "No",
-      fast_food: form.fast_food.value,
-      exercise: form.exercise.value
-    };
+    const data = { ...formData };
 
     try {
       const response = await platformService.submitPcosPrediction(data);
@@ -58,12 +66,12 @@ export default function Data() {
       <label className="form-label d-block">{label}</label>
 
       <div className="form-check form-check-inline">
-        <input type="radio" name={name} value="Yes" defaultChecked className="form-check-input"/>
+        <input type="radio" name={name} value="Yes" checked={formData[name] === "Yes"} onChange={updateField} className="form-check-input"/>
         <label className="form-check-label">Yes</label>
       </div>
 
       <div className="form-check form-check-inline">
-        <input type="radio" name={name} value="No" className="form-check-input"/>
+        <input type="radio" name={name} value="No" checked={formData[name] === "No"} onChange={updateField} className="form-check-input"/>
         <label className="form-check-label">No</label>
       </div>
     </div>
@@ -100,27 +108,27 @@ export default function Data() {
         <div className="row">
           <div className="col-md-6 mb-3">
             <label>Age</label>
-            <input name="age" type="number" className="form-control" required/>
+            <input name="age" type="number" value={formData.age} onChange={updateField} className="form-control" required/>
           </div>
 
           <div className="col-md-6 mb-3">
             <label>Weight (kg)</label>
-            <input name="weight" type="number" className="form-control" required/>
+            <input name="weight" type="number" value={formData.weight} onChange={updateField} className="form-control" required/>
           </div>
 
           <div className="col-md-6 mb-3">
             <label>Height (cm)</label>
-            <input name="height" type="number" className="form-control" required/>
+            <input name="height" type="number" value={formData.height} onChange={updateField} className="form-control" required/>
           </div>
 
           <div className="col-md-6 mb-3">
             <label>Waist</label>
-            <input name="waist" type="number" className="form-control" required/>
+            <input name="waist" type="number" value={formData.waist} onChange={updateField} className="form-control" required/>
           </div>
 
           <div className="col-md-6 mb-3">
             <label>Hip</label>
-            <input name="hip" type="number" className="form-control" required/>
+            <input name="hip" type="number" value={formData.hip} onChange={updateField} className="form-control" required/>
           </div>
         </div>
 
@@ -129,12 +137,12 @@ export default function Data() {
         <div className="row">
           <div className="col-md-6 mb-3">
             <label>Cycle Length</label>
-            <input name="cycle_length" type="number" className="form-control" required/>
+            <input name="cycle_length" type="number" value={formData.cycle_length} onChange={updateField} className="form-control" required/>
           </div>
 
           <div className="col-md-6 mb-3">
             <label>Regular Cycles?</label>
-            <select name="cycle" className="form-select">
+            <select name="cycle" value={formData.cycle} onChange={updateField} className="form-select">
               <option>Yes</option>
               <option>No</option>
             </select>

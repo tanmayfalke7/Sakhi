@@ -13,6 +13,9 @@ const toAppointment = (row) =>
     patientNotes: row.patient_notes || '',
     status: row.status,
     doctorRemarks: row.doctor_remarks || '',
+    callRoomId: row.call_room_id || '',
+    callStartedAt: row.call_started_at,
+    callEndedAt: row.call_ended_at,
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -30,12 +33,12 @@ const attachUsers = async (appointment, { doctor = false, patient = false } = {}
   return item;
 };
 
-const create = async ({ patient, doctor, appointmentDate, slotLabel, consultationMode = 'online', concern, patientNotes = '' }) => {
+const create = async ({ patient, doctor, appointmentDate, slotLabel, consultationMode = 'online', concern, patientNotes = '', callRoomId = '' }) => {
   const result = await query(
     `INSERT INTO appointments
-      (patient_id, doctor_id, appointment_date, slot_label, consultation_mode, concern, patient_notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [patient, doctor, appointmentDate, slotLabel, consultationMode, concern, patientNotes]
+      (patient_id, doctor_id, appointment_date, slot_label, consultation_mode, concern, patient_notes, call_room_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [patient, doctor, appointmentDate, slotLabel, consultationMode, concern, patientNotes, callRoomId]
   );
   return findById(result.insertId);
 };
@@ -49,7 +52,7 @@ const findConflict = async ({ doctor, appointmentDate, slotLabel }) => {
   const rows = await query(
     `SELECT * FROM appointments
      WHERE doctor_id = ? AND appointment_date = ? AND slot_label = ?
-       AND status IN ('requested', 'approved', 'completed')
+       AND status IN ('pending', 'approved', 'completed')
      LIMIT 1`,
     [doctor, appointmentDate, slotLabel]
   );
@@ -84,7 +87,7 @@ const listForDoctorPatient = async (doctorId, patientId) => {
 const upcomingForPatient = async (patientId) => {
   const rows = await query(
     `SELECT * FROM appointments
-     WHERE patient_id = ? AND status IN ('requested', 'approved')
+     WHERE patient_id = ? AND status IN ('pending', 'approved')
      ORDER BY appointment_date ASC LIMIT 3`,
     [patientId]
   );
@@ -122,6 +125,39 @@ const updateStatus = async (id, doctorId, { status, doctorRemarks }) => {
   return findById(id);
 };
 
+const cancelByPatient = async (id, patientId) => {
+  const appointment = await findById(id);
+  if (!appointment || appointment.patient !== String(patientId)) {
+    return null;
+  }
+
+  await query(
+    `UPDATE appointments SET status = 'cancelled' WHERE id = ? AND patient_id = ? AND status IN ('pending', 'approved')`,
+    [id, patientId]
+  );
+  return findById(id);
+};
+
+const endCall = async (id, doctorId) => {
+  const appointment = await findById(id);
+  if (!appointment || appointment.doctor !== String(doctorId)) {
+    return null;
+  }
+
+  await query(
+    `UPDATE appointments
+     SET status = 'completed', completed_at = COALESCE(completed_at, ?), call_ended_at = ?
+     WHERE id = ? AND doctor_id = ?`,
+    [new Date(), new Date(), id, doctorId]
+  );
+  return findById(id);
+};
+
+const markCallStarted = async (id) => {
+  await query(`UPDATE appointments SET call_started_at = COALESCE(call_started_at, ?) WHERE id = ?`, [new Date(), id]);
+  return findById(id);
+};
+
 module.exports = {
   create,
   findById,
@@ -133,6 +169,9 @@ module.exports = {
   todayForDoctor,
   countForDoctor,
   updateStatus,
+  cancelByPatient,
+  endCall,
+  markCallStarted,
   attachUsers,
   toAppointment,
 };

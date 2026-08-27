@@ -54,10 +54,10 @@ class MLService:
         risk_percentage = round(float(probability) * 100, 2)
 
         # Risk classification
-        if risk_percentage < 30:
+        if risk_percentage < 35:
             risk_level = "Low"
             recommendation = "Maintain a healthy lifestyle with a balanced diet and regular exercise."
-        elif risk_percentage < 60:
+        elif risk_percentage < 60 and risk_percentage >= 35:
             risk_level = "Moderate"
             recommendation = "Consider improving lifestyle habits and monitor symptoms. A medical consultation may help."
         else:

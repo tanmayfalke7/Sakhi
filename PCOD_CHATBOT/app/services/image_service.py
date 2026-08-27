@@ -1,5 +1,6 @@
 import httpx
 import logging
+
 from core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -11,7 +12,7 @@ class ImageService:
         Fetches a relevant, high-quality image URL from Unsplash asynchronously.
         Returns None if no image is found or if the API call fails.
         """
-        if not keyword or keyword.lower() == "none":
+        if not keyword or keyword.lower() == "none" or not settings.UNSPLASH_ACCESS_KEY:
             return None
 
         url = "https://api.unsplash.com/search/photos"

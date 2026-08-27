@@ -74,7 +74,7 @@ export default function DoctorDashboardPage() {
         <div className="page-hero text-start">
           <span className="section-badge">Doctor admin</span>
           <h1>Single-doctor operations dashboard</h1>
-          <p>Review the day’s schedule, manage patient requests, add private medical notes, and monitor platform activity.</p>
+          <p>Review today's schedule, manage patient notes, and monitor platform activity.</p>
         </div>
 
         <div className="row g-4 mb-4">
@@ -105,6 +105,7 @@ export default function DoctorDashboardPage() {
           <div className="col-lg-7">
             <div className="panel-card">
               <h2 className="panel-title mb-3">Appointments</h2>
+              <p className="panel-subtitle">Use the dedicated appointments page for approvals, status updates, and video calls.</p>
               <div className="history-list">
                 {appointments.map((appointment) => (
                   <div className="panel-card alt-surface mb-3" key={appointment._id}>

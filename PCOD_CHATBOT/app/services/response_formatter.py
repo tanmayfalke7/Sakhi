@@ -1,96 +1,125 @@
+import json
 import re
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 
 class ResponseFormatter:
-    """Format responses to be visually engaging"""
-    
     @staticmethod
     def format_chat_response(llm_response: str, graph_data: Any = None) -> Dict:
-        """Structure the API response with metadata"""
-        
-        # Detect if response has sections (for UI rendering)
-        has_sections = bool(re.search(r'\d\.\s', llm_response))
-        
-        # Extract any food mentions for quick actions
-        food_mentions = ResponseFormatter._extract_food_mentions(llm_response)
-        
-        # Count emojis for "vibe check"
-        emoji_count = len(re.findall(r'[\U0001F300-\U0001F9FF]', llm_response))
-        
+        text = ResponseFormatter._unwrap_text_response(llm_response)
+        food_mentions = ResponseFormatter._extract_food_mentions(text)
+        has_meal_plan = any(isinstance(item, dict) and item.get("plan_name") for item in (graph_data or []))
+
         return {
-            "response": llm_response,
+            "success": True,
+            "response": text,
             "metadata": {
-                "has_sections": has_sections,
-                "emoji_count": emoji_count,
-                "vibe": "energetic" if emoji_count > 3 else "warm",
-                "food_mentions": food_mentions[:3],  # Top 3
+                "has_sections": bool(re.search(r"(^|\n)\s*(\d+\.|Day\s+\d+)", text, re.IGNORECASE)),
+                "food_mentions": food_mentions[:5],
+                "has_meal_plan": has_meal_plan,
             },
-            "suggested_actions": ResponseFormatter._get_suggested_actions(llm_response),
-            "graph_data": graph_data  # Include raw data for frontend to use if needed
+            "suggested_actions": ResponseFormatter._get_suggested_actions(text, has_meal_plan),
+            "graph_data": graph_data or [],
         }
-    
+
     @staticmethod
     def _extract_food_mentions(text: str) -> list:
-        """Extract food names mentioned (simple version)"""
-        # This would be more sophisticated with NLP in production
-        common_foods = ["oats", "salmon", "spinach", "eggs", "berries", "avocado", 
-                       "nuts", "quinoa", "lentils", "kale", "apple", "chia"]
-        found = []
-        for food in common_foods:
-            if food in text.lower():
-                found.append(food.title())
-        return found
-    
+        common_foods = [
+            "oats",
+            "salmon",
+            "spinach",
+            "eggs",
+            "berries",
+            "avocado",
+            "nuts",
+            "quinoa",
+            "lentils",
+            "kale",
+            "apple",
+            "chia",
+        ]
+        lower_text = text.lower()
+        return [food.title() for food in common_foods if food in lower_text]
+
     @staticmethod
-    def _get_suggested_actions(text: str) -> list:
-        """Generate suggested next actions based on response"""
+    def _unwrap_text_response(value: Any) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return ""
+
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+            text = re.sub(r"\s*```$", "", text).strip()
+
+        if text.startswith("{") and text.endswith("}"):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, dict):
+                    return str(parsed.get("answer") or parsed.get("response") or parsed.get("message") or text).strip()
+            except json.JSONDecodeError:
+                return text
+
+        return text
+
+    @staticmethod
+    def _get_suggested_actions(text: str, has_meal_plan: bool = False) -> list:
+        lower_text = text.lower()
         actions = []
-        
-        if "meal plan" in text.lower() or "recipe" in text.lower():
-            actions.append({
-                "text": "✨ See full meal plan",
-                "action": "view_meal_plan"
-            })
-            
-        if any(word in text.lower() for word in ["food", "eat", "try"]):
-            actions.append({
-                "text": "🥑 Explore these foods",
-                "action": "explore_foods"
-            })
-            
-        if "symptom" in text.lower() or "help" in text.lower():
-            actions.append({
-                "text": "🌸 Track this symptom",
-                "action": "track_symptom"
-            })
-            
+
+        if has_meal_plan or "meal plan" in lower_text:
+            actions.append({"text": "See full meal plan", "action": "view_meal_plan"})
+        if any(word in lower_text for word in ["food", "eat", "try", "meal"]):
+            actions.append({"text": "Explore foods", "action": "explore_foods"})
+        if "symptom" in lower_text or "help" in lower_text:
+            actions.append({"text": "Track symptom", "action": "track_symptom"})
+
         return actions
-    
+
     @staticmethod
     def format_meal_plan_response(plan_data: List[Dict]) -> Dict:
-        """Format meal plan data for frontend"""
         if not plan_data:
-            return {"error": "Meal plan not found"}
-            
-        plan = plan_data[0]
-        
-        # Extract days in a structured way
+            return {
+                "success": False,
+                "message": "Meal plan not found.",
+                "plans": [],
+            }
+
+        formatted_plans = [ResponseFormatter._format_single_plan(plan) for plan in plan_data]
+        primary = formatted_plans[0]
+        return {
+            "success": True,
+            "message": "Meal plan found.",
+            "plans": formatted_plans,
+            **primary,
+        }
+
+    @staticmethod
+    def _format_single_plan(plan: Dict) -> Dict:
         days = []
-        if "daily_plan" in plan:
-            for day_data in plan["daily_plan"]:
-                days.append({
+        for day_data in sorted(plan.get("daily_plan") or [], key=lambda value: value.get("day") or 0):
+            days.append(
+                {
                     "day": day_data.get("day"),
-                    "meals": day_data.get("meals", [])
-                })
-        
+                    "meals": day_data.get("meals", []),
+                    "totals": {
+                        "calories": day_data.get("total_calories"),
+                        "protein": day_data.get("protein"),
+                        "carbs": day_data.get("carbs"),
+                        "fat": day_data.get("fat"),
+                    },
+                }
+            )
+
         return {
             "name": plan.get("plan_name"),
             "description": plan.get("description"),
-            "duration": plan.get("duration"),
+            "duration": plan.get("duration") or len(days) or 7,
             "difficulty": plan.get("difficulty"),
             "focus": plan.get("focus"),
+            "addressed_symptoms": plan.get("addressed_symptoms", []),
+            "match_count": plan.get("symptom_match_count", 0),
             "days": days,
-            "vibe_intro": f"✨ Your {plan.get('duration')}-day glow-up starts here!"
         }
+
 
 response_formatter = ResponseFormatter()

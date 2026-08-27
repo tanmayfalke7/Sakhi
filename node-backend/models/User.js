@@ -6,6 +6,10 @@ const emptyProfile = {
   cycleRegularity: '',
   lifestyle: '',
   symptoms: '',
+  waistCm: undefined,
+  hipCm: undefined,
+  cycleLength: undefined,
+  sleepHours: undefined,
 };
 
 const parseJson = (value, fallback) => {

@@ -9,6 +9,8 @@ const predictionRoutes = require('./routes/predictionRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const doctorRoutes = require('./routes/doctorRoutes');
+const chatRoutes = require('./routes/chat');
+const contactRoutes = require('./routes/contactRoutes');
 const { protect } = require('./middleware/authMiddleware');
 const ensureDoctorAccount = require('./utils/ensureDoctorAccount');
 
@@ -34,6 +36,8 @@ app.use('/api/predictions', predictionRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/doctor', doctorRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -46,6 +50,8 @@ app.get('/', (req, res) => {
       appointments: '/api/appointments',
       community: '/api/community',
       doctor: '/api/doctor',
+      chat: '/api/chat',
+      contact: '/api/contact',
     },
   });
 });

@@ -4,7 +4,7 @@ const dbConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'Tanmaychasql@123',
+  password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'sakhi_db',
   waitForConnections: true,
   connectionLimit: 10,
@@ -84,8 +84,11 @@ const initializeSchema = async () => {
       consultation_mode ENUM('online', 'clinic') NOT NULL DEFAULT 'online',
       concern VARCHAR(255) NOT NULL,
       patient_notes TEXT NULL,
-      status ENUM('requested', 'approved', 'rejected', 'completed') NOT NULL DEFAULT 'requested',
+      status ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
       doctor_remarks TEXT NULL,
+      call_room_id VARCHAR(120) NULL,
+      call_started_at DATETIME NULL,
+      call_ended_at DATETIME NULL,
       completed_at DATETIME NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -96,6 +99,31 @@ const initializeSchema = async () => {
       KEY appointments_status_idx (status),
       CONSTRAINT appointments_patient_fk FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
       CONSTRAINT appointments_doctor_fk FOREIGN KEY (doctor_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await query(`
+    ALTER TABLE appointments
+    MODIFY status ENUM('requested', 'pending', 'approved', 'rejected', 'completed', 'cancelled') NOT NULL DEFAULT 'pending'
+  `).catch(() => {});
+  await query(`UPDATE appointments SET status = 'pending' WHERE status = 'requested'`).catch(() => {});
+  await query(`
+    ALTER TABLE appointments
+    MODIFY status ENUM('pending', 'approved', 'rejected', 'completed', 'cancelled') NOT NULL DEFAULT 'pending'
+  `).catch(() => {});
+  await query(`ALTER TABLE appointments ADD COLUMN call_room_id VARCHAR(120) NULL`).catch(() => {});
+  await query(`ALTER TABLE appointments ADD COLUMN call_started_at DATETIME NULL`).catch(() => {});
+  await query(`ALTER TABLE appointments ADD COLUMN call_ended_at DATETIME NULL`).catch(() => {});
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      subject VARCHAR(200) NOT NULL,
+      message TEXT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
